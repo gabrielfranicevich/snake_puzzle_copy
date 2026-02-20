@@ -1,0 +1,4 @@
+snake_puzzle
+*.o
+*.d
+*.exe

@@ -41,7 +41,7 @@ private:
     void drawPortal(int gx, int gy, float t);
     void drawBox(int gx, int gy);
     void drawTrap(int gx, int gy, float t);
-    void drawSnakeSegment(int gx, int gy, float sz, glm::vec4 col, bool isHead, bool isTail, float t);
+    void drawSnakeSegmentF(float gx, float gy, float sz, glm::vec4 col, bool isHead, bool isTail, float t);
     void drawStar(float cx2, float cy2, float r, bool filled);
     void drawButton(float px, float py, float w, float h, glm::vec4 bg, const char* label, glm::vec4 tc, float sc);
 

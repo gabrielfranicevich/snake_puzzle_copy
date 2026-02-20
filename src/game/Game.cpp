@@ -11,6 +11,8 @@ void GameEngine::loadLevel(int idx) {
     m_levelIdx = idx;
     m_state = GameState(); 
     loadLevelData(idx, m_state);
+    m_state.prevSnake = m_state.snake;
+    m_state.moveTimer = 1.0f;
 }
 
 void GameEngine::nextLevel() {
@@ -26,17 +28,19 @@ void GameEngine::restartLevel() {
 }
 
 void GameEngine::saveState() {
-    m_state.hist.push_back({m_state.snake, m_state.grid, m_state.apples, m_state.moves});
+    m_state.hist.push_back({m_state.snake, m_state.prevSnake, m_state.grid, m_state.apples, m_state.moves});
 }
 
 void GameEngine::undo() {
     if (m_state.hist.empty()) return;
     auto& s = m_state.hist.back();
     m_state.snake  = s.snake;
+    m_state.prevSnake = s.prevSnake;
     m_state.grid   = s.grid;
     m_state.apples = s.apples;
     m_state.moves  = s.moves;
     m_state.eatFlash = 0;
+    m_state.moveTimer = 1.0f;
     m_state.won  = false;
     m_state.dead = false;
     m_state.lastDir = {0, 0};
@@ -44,6 +48,7 @@ void GameEngine::undo() {
 }
 
 void GameEngine::tick(float dt) {
+    m_state.moveTimer = std::min(1.0f, m_state.moveTimer + dt * 6.5f); // 0.15s per tile
     m_state.eatFlash  = std::max(0.f, m_state.eatFlash  - dt * 3.5f);
     m_state.fallShake = std::max(0.f, m_state.fallShake - dt * 5.0f);
     if (m_state.won)  m_state.winTimer  += dt;
@@ -98,6 +103,8 @@ void GameEngine::applyGravity() {
         }
 
         // Phase 3: fall one row
+        m_state.prevSnake = m_state.snake;
+        m_state.moveTimer = 0.0f;
         for (auto& seg : m_state.snake) seg.y++;
         m_state.fallShake = 1.0f;
 
@@ -108,6 +115,8 @@ void GameEngine::applyGravity() {
 
 bool GameEngine::doMove(V2 dir) {
     if (m_state.won || m_state.dead || m_state.snake.empty()) return false;
+    // Input throttling: ignore new moves until previous animation finishes
+    if (m_state.moveTimer < 0.85f) return false;
 
     // Block reversing direction when snake has ≥2 segments
     if (m_state.snake.size() > 1) {
@@ -146,6 +155,8 @@ bool GameEngine::doMove(V2 dir) {
     }
 
     // Commit move
+    m_state.prevSnake = m_state.snake;
+    m_state.moveTimer = 0.0f;
     m_state.lastDir = dir;
     m_state.snake.push_front(nh);
     m_state.moves++;

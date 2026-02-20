@@ -22,6 +22,7 @@ struct V2 {
 // ─── Game State ──────────────────────────────────────────────────────────────
 struct Snap {
     std::deque<V2> snake;
+    std::deque<V2> prevSnake;
     std::vector<T> grid;
     int apples, moves;
 };
@@ -31,10 +32,11 @@ struct GameState {
     int w = 0, h = 0;
     std::vector<T> grid;
     std::deque<V2> snake;  // [0]=head
+    std::deque<V2> prevSnake; 
     int apples = 0, moves = 0, stars = 0;
     bool won = false, dead = false;
     V2 lastDir = {0, 0};
-    float winTimer = 0, deadTimer = 0, eatFlash = 0, fallShake = 0;
+    float winTimer = 0, deadTimer = 0, eatFlash = 0, fallShake = 0, moveTimer = 1.0f;
     std::vector<Snap> hist;
 
     T& at(int x, int y)       { return grid[y * w + x]; }

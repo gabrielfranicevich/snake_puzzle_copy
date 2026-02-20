@@ -418,20 +418,23 @@ void Renderer::drawBox(int gx, int gy){
     dR(px+5, py+sz-5, sz-5, 5, x);
 }
 
-void Renderer::drawSnakeSegment(int gx, int gy, float sz, glm::vec4 col, bool isHead, bool isTail, float t){
+void Renderer::drawSnakeSegmentF(float gx, float gy, float sz, glm::vec4 col, bool isHead, bool isTail, float t){
+    float px = m_ox + gx * CELL;
+    float py = HUD_H + gy * CELL;
+
     Opt sh; sh.c={0,0,0,0.17f}; sh.r=1.f;
-    dC(gx, gy, sz+8, sh);
+    dR(px+(CELL-sz-8)*.5f, py+(CELL-sz-8)*.5f, sz+8, sz+8, sh);
     Opt o; o.c=col; o.r=1.f; o.fx=3;
     if (isTail) o.fx = 0; // plain for tail
-    dC(gx, gy, sz, o);
+    dR(px+(CELL-sz)*.5f, py+(CELL-sz)*.5f, sz, sz, o);
 
     if(isHead){
-        float px=cx(gx)+(CELL-sz)*.5f;
-        float py=cy(gy)+(CELL-sz)*.5f;
+        float epx=px+(CELL-sz)*.5f;
+        float epy=py+(CELL-sz)*.5f;
         Opt ew; ew.c=SNK_EW; ew.r=1.f;
         float ew_sz=sz*0.24f;
-        float eye_y=py+sz*0.24f;
-        float el=px+sz*0.20f, er=px+sz*0.58f;
+        float eye_y=epy+sz*0.24f;
+        float el=epx+sz*0.20f, er=epx+sz*0.58f;
         dR(el, eye_y, ew_sz, ew_sz*1.2f, ew);
         dR(er, eye_y, ew_sz, ew_sz*1.2f, ew);
         Opt ep; ep.c=SNK_EP; ep.r=0.4f;
@@ -445,10 +448,10 @@ void Renderer::drawSnakeSegment(int gx, int gy, float sz, glm::vec4 col, bool is
     }
     if (isTail) {
         // Small tapered tip indicator
-        float px=cx(gx)+(CELL-sz)*.5f;
-        float py=cy(gy)+(CELL-sz)*.5f;
+        float tpx=px+(CELL-sz)*.5f;
+        float tpy=py+(CELL-sz)*.5f;
         Opt tip; tip.c={col.r*0.7f, col.g*0.7f, col.b*0.7f, 0.8f}; tip.r=1.f;
-        dR(px+sz*0.3f, py+sz*0.3f, sz*0.4f, sz*0.4f, tip);
+        dR(tpx+sz*0.3f, tpy+sz*0.3f, sz*0.4f, sz*0.4f, tip);
     }
 }
 
@@ -534,19 +537,65 @@ void Renderer::renderFrame(const GameState& state, int currentLevel, int totalLe
             if(state.at(gx,gy)==T::Trap) drawTrap(gx,gy,time);
 
     // 6. Snake (back-to-front: tail first, head last)
-    int sLen=(int)state.snake.size();
-    for(int i=sLen-1;i>=0;i--){
-        auto& seg = state.snake[i];
-        float t = (sLen>1) ? (float)i/(sLen-1) : 0.f;
-        glm::vec4 col = glm::mix(SNK_B, SNK_D*1.3f, t*0.4f);
+    int sLen = (int)state.snake.size();
+    int pLen = (int)state.prevSnake.size();
+    
+    // Easing function for smooth movement
+    float mt = state.moveTimer;
+    float ease = mt * mt * (3.0f - 2.0f * mt); // smoothstep
+
+    for(int i = sLen - 1; i >= 0; i--) {
+        auto& curr = state.snake[i];
+        
+        // Find matching previous segment
+        V2 prev = curr; // default if no animation
+        if (pLen > 0 && mt < 1.0f) {
+            if (sLen == pLen) {
+                // Normal move
+                prev = state.prevSnake[i];
+            } else if (sLen > pLen) {
+                // Grew (ate apple): head is new, mid/tail shift index
+                if (i == 0) prev = state.prevSnake[0];
+                else prev = state.prevSnake[i - 1];
+            } else {
+                // Shrank (hit trap)
+                if (i < pLen) prev = state.prevSnake[i];
+            }
+        }
+
+        // Calculate visual coordinates via interpolation
+        float vx = curr.x;
+        float vy = curr.y;
+        
+        // If x jumped by more than 1 (meaning it wrapped the infinite map horizontally),
+        // we DO NOT interpolate across the screen. Just snap.
+        if (std::abs(curr.x - prev.x) <= 1 && std::abs(curr.y - prev.y) <= 1 && mt < 1.0f) {
+            vx = prev.x + (curr.x - prev.x) * ease;
+            vy = prev.y + (curr.y - prev.y) * ease;
+        }
+
+        float t = (sLen > 1) ? (float)i / (sLen - 1) : 0.f;
+        glm::vec4 col = glm::mix(SNK_B, SNK_D * 1.3f, t * 0.4f);
         bool isHead = (i == 0);
         bool isTail = (i == sLen - 1);
-        float extra = (isHead && state.eatFlash>0.f) ? state.eatFlash*7.f : 0.f;
+        float extra = (isHead && state.eatFlash > 0.f) ? state.eatFlash * 7.f : 0.f;
         float sz;
-        if (isHead)       sz = CELL*0.82f + extra;
-        else if (isTail)  sz = CELL*0.58f;  // tapered tail
-        else              sz = CELL*0.70f - t*CELL*0.06f;
-        drawSnakeSegment(seg.x, seg.y, sz, col, isHead, isTail, time);
+        if (isHead)       sz = CELL * 0.82f + extra;
+        else if (isTail)  sz = CELL * 0.58f;  // tapered tail
+        else              sz = CELL * 0.70f - t * CELL * 0.06f;
+        
+        // Pass interpolated floating coordinates directly to cell center logic
+        // We'll overload drawSnakeSegment or just inline the cx/cy
+        float px = m_ox + vx * CELL;
+        float py = HUD_H + vy * CELL;
+        
+        // Let's call a modified version of drawSnakeSegment that takes pixel center instead of grid x,y
+        // Actually, drawSnakeSegment already does cx() internally. We need to refactor it to take floats
+        // or just interpolate cx(curr) and cx(prev).
+        // It's cleaner to pass the float grid coords. Let's fix drawSnakeSegment signature.
+        float rawCx = vx;
+        float rawCy = vy;
+        drawSnakeSegmentF(rawCx, rawCy, sz, col, isHead, isTail, time);
     }
 
     // ── Footer ───────────────────────────────────────────────────────────────
