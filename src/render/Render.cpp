@@ -255,7 +255,7 @@ void Renderer::dRot(float cxp, float cyp, float w, float h, float angle,
 }
 
 void Renderer::dC(int gx, int gy, float sz, const Opt &o) {
-  dR(cx(gx) + (CELL - sz) * .5f, cy(gy) + (CELL - sz) * .5f, sz, sz, o);
+  dR(cx(gx) + (m_cell - sz) * .5f, cy(gy) + (m_cell - sz) * .5f, sz, sz, o);
 }
 
 static const uint8_t FONT[][7] = {
@@ -429,36 +429,36 @@ void Renderer::drawTile(int gx, int gy) {
   // Background color first (earthy brown base)
   Opt bg;
   bg.c = {0.45f, 0.28f, 0.10f, 1.f};
-  dR(px, py, CELL, CELL, bg);
+  dR(px, py, m_cell, m_cell, bg);
   // Shadow behind
   Opt sh;
   sh.c = {0, 0, 0, 0.22f};
   sh.r = 0.15f;
-  dR(px + 4, py + 5, CELL, CELL, sh);
+  dR(px + 4, py + 5, m_cell, m_cell, sh);
   // SVG block texture on top — white tint = full color passthrough
   if (m_texBlock) {
     Opt svgo;
     svgo.c = {1, 1, 1, 1};
     svgo.tex = m_texBlock;
-    dR(px, py, CELL, CELL, svgo);
+    dR(px, py, m_cell, m_cell, svgo);
   } else {
     // Fallback: manual brick look
     Opt o2;
     o2.c = {0.53f, 0.33f, 0.16f, 1};
     o2.fx = 6;
-    dR(px, py, CELL, CELL, o2);
+    dR(px, py, m_cell, m_cell, o2);
     Opt sd;
     sd.c = {0.32f, 0.18f, 0.06f, 1};
-    dR(px + CELL - 6, py + 6, 6, CELL - 6, sd);
-    dR(px + 6, py + CELL - 6, CELL - 6, 6, sd);
+    dR(px + m_cell - 6, py + 6, 6, m_cell - 6, sd);
+    dR(px + 6, py + m_cell - 6, m_cell - 6, 6, sd);
   }
 }
 
 void Renderer::drawApple(int gx, int gy, float t) {
   float bob = sinf(t * 2.1f + gx * 1.3f) * 2.5f;
-  float sz = CELL * 0.72f;
-  float px = cx(gx) + (CELL - sz) * .5f;
-  float py = cy(gy) + (CELL - sz) * .5f + bob;
+  float sz = m_cell * 0.72f;
+  float px = cx(gx) + (m_cell - sz) * .5f;
+  float py = cy(gy) + (m_cell - sz) * .5f + bob;
   if (m_texApple) {
     // Subtle drop shadow
     Opt sh;
@@ -486,7 +486,7 @@ void Renderer::drawApple(int gx, int gy, float t) {
 }
 
 void Renderer::drawPortal(int gx, int gy, float t) {
-  float sz = CELL * 0.86f;
+  float sz = m_cell * 0.86f;
   if (m_texPortal) {
     // Pulsing glow ring behind
     Opt glow;
@@ -501,8 +501,8 @@ void Renderer::drawPortal(int gx, int gy, float t) {
     o.fx = 0; // Remove the twinkling shader effect
     // Clockwise rotation (angle increases)
     float angle = t * 2.5f;
-    float cxp = cx(gx) + CELL * 0.5f;
-    float cyp = cy(gy) + CELL * 0.5f;
+    float cxp = cx(gx) + m_cell * 0.5f;
+    float cyp = cy(gy) + m_cell * 0.5f;
     dRot(cxp, cyp, sz, sz, angle, o);
   } else {
     // Fallback procedural
@@ -527,24 +527,24 @@ void Renderer::drawPortal(int gx, int gy, float t) {
 
 void Renderer::drawTrap(int gx, int gy, float angle) {
   float px = cx(gx), py = cy(gy);
-  float cxp = px + CELL * 0.5f;
-  float cyp = py + CELL * 0.5f;
+  float cxp = px + m_cell * 0.5f;
+  float cyp = py + m_cell * 0.5f;
   if (m_texTrap) {
     // No background paint, no animation — SVG fills the tile exactly
     Opt o;
     o.c = {1, 1, 1, 1};
     o.tex = m_texTrap;
-    dRot(cxp, cyp, CELL, CELL, angle, o);
+    dRot(cxp, cyp, m_cell, m_cell, angle, o);
   } else {
     // Fallback: solid red danger tile
     Opt o;
     o.c = {0.80f, 0.08f, 0.08f, 1};
-    dRot(cxp, cyp, CELL, CELL, angle, o);
+    dRot(cxp, cyp, m_cell, m_cell, angle, o);
   }
 }
 
 void Renderer::drawBox(int gx, int gy) {
-  float sz = CELL * 0.80f;
+  float sz = m_cell * 0.80f;
   Opt sh;
   sh.c = {0, 0, 0, 0.20f};
   sh.r = 0.12f;
@@ -553,7 +553,7 @@ void Renderer::drawBox(int gx, int gy) {
   o.c = BOX_F;
   o.r = 0.12f;
   dC(gx, gy, sz, o);
-  float px = cx(gx) + (CELL - sz) * .5f, py = cy(gy) + (CELL - sz) * .5f;
+  float px = cx(gx) + (m_cell - sz) * .5f, py = cy(gy) + (m_cell - sz) * .5f;
   Opt x;
   x.c = BOX_S;
   dR(px, py + sz * .48f, sz, 2, x);
@@ -577,10 +577,10 @@ static float segAngle(float dx, float dy) {
 void Renderer::drawSnakeSegmentF(float gx, float gy, float sz, glm::vec4 col,
                                  bool isHead, bool isTail, float angle,
                                  float t) {
-  float px = m_ox + gx * CELL;
-  float py = HUD_H + gy * CELL;
-  float cx = px + CELL * 0.5f;
-  float cy = py + CELL * 0.5f;
+  float px = m_ox + gx * m_cell;
+  float py = m_oy + gy * m_cell;
+  float cx = px + m_cell * 0.5f;
+  float cy = py + m_cell * 0.5f;
 
   // Determine which SVG texture and rotation angle to use
   GLuint segTex = m_texSnakeMid;
@@ -605,17 +605,17 @@ void Renderer::drawSnakeSegmentF(float gx, float gy, float sz, glm::vec4 col,
     Opt sh;
     sh.c = {0, 0, 0, 0.17f};
     sh.r = 1.f;
-    dR(px + (CELL - sz - 8) * .5f, py + (CELL - sz - 8) * .5f, sz + 8, sz + 8,
+    dR(px + (m_cell - sz - 8) * .5f, py + (m_cell - sz - 8) * .5f, sz + 8, sz + 8,
        sh);
     Opt o;
     o.c = col;
     o.r = 1.f;
     o.fx = isHead ? 2 : (isTail ? 0 : 3);
-    dR(px + (CELL - sz) * .5f, py + (CELL - sz) * .5f, sz, sz, o);
+    dR(px + (m_cell - sz) * .5f, py + (m_cell - sz) * .5f, sz, sz, o);
 
     if (isHead) {
-      float epx = px + (CELL - sz) * .5f;
-      float epy = py + (CELL - sz) * .5f;
+      float epx = px + (m_cell - sz) * .5f;
+      float epy = py + (m_cell - sz) * .5f;
       Opt ew;
       ew.c = SNK_EW;
       ew.r = 1.f;
@@ -638,8 +638,8 @@ void Renderer::drawSnakeSegmentF(float gx, float gy, float sz, glm::vec4 col,
       dR(er + ew_sz * 0.29f, eye_y + ew_sz * 0.28f, pu_sz, pu_sz, pu);
     }
     if (isTail) {
-      float tpx = px + (CELL - sz) * .5f;
-      float tpy = py + (CELL - sz) * .5f;
+      float tpx = px + (m_cell - sz) * .5f;
+      float tpy = py + (m_cell - sz) * .5f;
       Opt tip;
       tip.c = {col.r * 0.7f, col.g * 0.7f, col.b * 0.7f, 0.8f};
       tip.r = 1.f;
@@ -716,7 +716,15 @@ void Renderer::renderFrame(const GameState &state, int currentLevel,
   }
 
   // ── Board ────────────────────────────────────────────────────────────────
-  m_ox = (m_W - state.w * CELL) / 2;
+  float availableHeight = m_H - HUD_H - BOT_H;
+
+  // Calculate dynamic cell size to fit the board + 1 cell padding on each side
+  float maxCellW = (float)m_W / (state.w + 2.0f);
+  float maxCellH = availableHeight / (state.h + 2.0f);
+  m_cell = std::min({maxCellW, maxCellH, (float)CELL});
+
+  m_ox = (m_W - state.w * m_cell) / 2;
+  m_oy = HUD_H + (availableHeight - state.h * m_cell) / 2;
 
   // 1. Floor tiles (SVG block)
   for (int gy = 0; gy < state.h; gy++)
@@ -811,12 +819,12 @@ void Renderer::renderFrame(const GameState &state, int currentLevel,
     bool isHead = (i == 0);
     bool isTail = (i == sLen - 1);
     // All segments fill the full cell so there are no gaps between them
-    float sz = (float)CELL;
+    float sz = (float)m_cell;
 
     // Pass interpolated floating coordinates directly to cell center logic
     // We'll overload drawSnakeSegment or just inline the cx/cy
-    float px = m_ox + vx * CELL;
-    float py = HUD_H + vy * CELL;
+    float px = m_ox + vx * m_cell;
+    float py = m_oy + vy * m_cell;
 
     // Determine direction angle for this segment
     // For head: use the direction from prev segment to current segment

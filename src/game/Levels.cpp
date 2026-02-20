@@ -16,63 +16,31 @@ struct LvDef {
 // Apple tiles use 'A'. Floor tiles use '='. Void tiles use ' '.
 
 static const LvDef LEVELS[] = {
-    // 0 — example
-    {"Example",
-     12,
-     4,
-     {
-         "  #BMH A X  ",
-         "  ======== P",
-         "  X      ===",
-         "   X=       ",
-     }},
     // 1 — slide right, gravity demo, no apples
-    {"Slide Right",
-     12,
-     4,
+    {"Slide Right", 13, 3,
      {
-         "  BMH       ",
-         "  ======== P",
-         "         ===",
-         "            ",
+      "  BMH        ",
+      "  ======== P ",
+      "         === ",
      }},
     // 2 — eat one apple then portal
-    {"First Bite",
-     11,
-     4,
+    {"First Bite", 13, 4,
      {
-         " BMH       ",
-         "  ======   ",
-         "       A  P",
-         "       ====",
+      " BMH         ",
+      "  ======     ",
+      "       A  P  ",
+      "       ====  ",
      }},
     // 3 — staircase drop
-    {"Staircase",
-     10,
-     5,
+    {"Staircase", 11, 4,
      {
-         " BMH      ",
-         "  ==== A  ",
-         "      ====",
-         "         P",
-         "         =",
-     }},
-    // 4 — apple above, must climb up
-    {"Up and Over",
-     9,
-     6,
-     {
-         "    A    ",
-         "   ===   ",
-         "  =====  ",
-         " =======P",
-         "   HMB  =",
-         "   ==    ",
+      " BMH       ",
+      "  ==== A   ",
+      "      ==== ",
+      "         P ",
      }},
     // 5 — two apples, then find portal below
-    {"Double Dip",
-     11,
-     6,
+    {"Double Dip", 11, 6,
      {
          "  BMH      ",
          "  =======  ",
@@ -95,7 +63,7 @@ static const LvDef LEVELS[] = {
     // 7 — U-turn platform
     {"U-Turn",
      11,
-     7,
+     6,
      {
          " BMH       ",
          "  ======   ",
@@ -103,19 +71,18 @@ static const LvDef LEVELS[] = {
          "     A   = ",
          "   =======P",
          "          =",
-         "           ",
      }},
     // 8 — introduce box pushing
     {"Push It",
-     12,
+     10,
      6,
      {
-         "  BMH      ",
-         "  ====     ",
-         "       #   ",
-         "       =  =",
-         "       ===P",
-         "          =",
+         "BMH      ",
+         "====     ",
+         "     #   ",
+         "     =  =",
+         "     ===P",
+         "        =",
      }},
     // 9 — multi-apple cascade
     {"Cascade",
@@ -192,7 +159,7 @@ void loadLevelData(int idx, GameState &state) {
 
   for (int gy = 0; gy < state.h; gy++) {
     const char *row = d.rows[gy];
-    int rl = (int)strlen(row);
+    int rl = row ? (int)strlen(row) : 0;
     for (int gx = 0; gx < state.w; gx++) {
       char c = (gx < rl) ? row[gx] : ' ';
       switch (c) {

@@ -69,7 +69,9 @@ private:
 
   int m_W, m_H;
   int m_ox; // x-offset to center board horizontally
+  int m_oy; // y-offset to center board vertically
+  float m_cell; // dynamic cell size based on screen space
 
-  float cx(int gx) { return m_ox + gx * CELL; }
-  float cy(int gy) { return HUD_H + gy * CELL; }
+  float cx(int gx) { return m_ox + gx * m_cell; }
+  float cy(int gy) { return m_oy + gy * m_cell; }
 };
